@@ -1,12 +1,15 @@
 package com.supertramp.heapdump;
 
 import android.os.Debug;
+import android.util.Log;
 
 import java.io.IOException;
 
 public class HeapDumper {
 
     static {
+        System.loadLibrary("xhook");
+        System.loadLibrary("kwai-android-base");
         System.loadLibrary("heapdump");
     }
 
@@ -22,7 +25,9 @@ public class HeapDumper {
             else {
                 Debug.dumpHprofData(path);
             }
-        }catch (Exception e) {}
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -30,35 +35,41 @@ public class HeapDumper {
      * @throws IOException
      */
     private static void stripDump(String path) throws IOException {
-        enableProxy();
+        initStripDump();
+        hprofName(path);
         Debug.dumpHprofData(path);
-        closeProxy();
     }
 
     /**
      * 在子进程中dump堆内存
      */
-    public static void forkAndDump(String path, boolean strip) {
+    public static boolean forkAndDump(String path, boolean strip) {
+        nativeInit();
         int pid = suspendAndFork();
         if (pid == 0) {
             dump(path, strip);
+            exitProcess();
+            return false;
+        }
+        else {
+            return resumeAndWait(pid);
         }
     }
+
+    public native static void initStripDump();
+
+    public native static void hprofName(String name);
+
+    public native static void nativeInit();
 
     /**
      * fork前挂起所有线程，骗过虚拟机（因为虚拟机dump前需要挂起所有线程 stop the world）
      * @return 返回子进程id
      */
-    public native static int suspendAndFork();
+    private native static int suspendAndFork();
 
-    /**
-     * 打开写文件代理
-     */
-    private native static void enableProxy();
+    private native static boolean resumeAndWait(int pid);
 
-    /**
-     * 关闭代理
-     */
-    private native static void closeProxy();
+    private native static void exitProcess();
 
 }

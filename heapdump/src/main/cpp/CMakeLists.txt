@@ -10,7 +10,18 @@ cmake_minimum_required(VERSION 3.18.1)
 
 project("heapdump")
 
-include_directories(include ../../../../xhook/src/main/cpp/include)
+set(XHOOK_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../xhook)
+set(KWAI_ANDROID_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../KOOM-master/koom-common/kwai-android-base)
+
+include_directories(${CMAKE_SOURCE_DIR}/include
+        ${XHOOK_BASE_DIR}/src/main/cpp/include
+        ${KWAI_ANDROID_BASE_DIR}/src/main/cpp/include/
+        ${KWAI_ANDROID_BASE_DIR}/src/main/cpp/liblog/include/)
+
+#设置生成的so动态库最后输出到jniLibs目录
+#set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../jniLibs/${ANDROID_ABI})
+
+LINK_DIRECTORIES(../jniLibs/${ANDROID_ABI})
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
@@ -24,7 +35,7 @@ add_library( # Sets the name of the library.
              SHARED
 
              # Provides a relative path to your source file(s).
-            heapdump_bridge.cpp)
+            heapdump_bridge.cpp hprof_strip.cpp hprof_dump.cpp)
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
@@ -48,4 +59,4 @@ target_link_libraries( # Specifies the target library.
 
                        # Links the target library to the log library
                        # included in the NDK.
-                       ${log-lib} )
+                       ${log-lib} xhook kwai-android-base)
